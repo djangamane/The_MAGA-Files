@@ -7,7 +7,7 @@ import { MonetizationSection } from './components/MonetizationSection';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { Logo } from './components/Logo';
 
-import type { AnalysisResult } from './types';
+import type { AnalysisResult, Trend, NotableQuote } from './types';
 import { analyzeNewsletterData } from './services/geminiService';
 
 // The CSV URL is now managed via environment variables for easy configuration on Vercel.
@@ -19,6 +19,92 @@ const App: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [currentQuery, setCurrentQuery] = useState<string>('');
+
+  // Agent 1: Data Pattern Analysis - Focuses on identifying patterns, themes, and trends
+  const performPatternAnalysis = useCallback(async (csvData: string, userQuery: string) => {
+    const patternPrompt = `
+      Act as a Data Pattern Analyst Agent. Your role is to identify patterns, themes, and trends in the provided CSV data in response to the user's question.
+      
+      User's question: ${userQuery}
+      
+      CSV Data:
+      ${csvData}
+      
+      Please provide your analysis in the following JSON format:
+      {
+        "keyThemes": ["List of key themes found in the data"],
+        "emergingTrends": [
+          {
+            "trend": "Name of the trend",
+            "description": "Description of the trend",
+            "supportingData": ["List of supporting data points"]
+          }
+        ]
+      }
+      
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting.
+    `;
+    
+    // Create a specialized version of the analysis with the pattern-focused prompt
+    return await analyzeNewsletterData(csvData, patternPrompt);
+  }, []);
+
+  // Agent 2: Context Analysis - Provides historical and contextual insights
+  const performContextAnalysis = useCallback(async (csvData: string, userQuery: string) => {
+    const contextPrompt = `
+      Act as a Context Analyst Agent. Your role is to provide historical and contextual insights from the provided CSV data in response to the user's question.
+      
+      User's question: ${userQuery}
+      
+      CSV Data:
+      ${csvData}
+      
+      Please provide your analysis in the following JSON format:
+      {
+        "notableQuotes": [
+          {
+            "quote": "A notable quote from the data",
+            "context": "Context for the quote"
+          }
+        ],
+        "historicalInsights": ["List of historical insights from the data"]
+      }
+      
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting.
+    `;
+    
+    // Create a specialized version of the analysis with the context-focused prompt
+    return await analyzeNewsletterData(csvData, contextPrompt);
+  }, []);
+
+  // Agent 3: Synthesis Analysis - Combines insights from other agents
+  const performSynthesisAnalysis = useCallback(async (csvData: string, userQuery: string, patternResult: any, contextResult: any) => {
+    const synthesisPrompt = `
+      Act as a Synthesis Analyst Agent. Your role is to synthesize the insights from the Data Pattern Analyst and Context Analyst to create a comprehensive analysis that answers the user's question.
+      
+      User's question: ${userQuery}
+      
+      CSV Data:
+      ${csvData}
+      
+      Data Pattern Analysis Results:
+      ${JSON.stringify(patternResult, null, 2)}
+      
+      Context Analysis Results:
+      ${JSON.stringify(contextResult, null, 2)}
+      
+      Please provide your comprehensive analysis in the following JSON format:
+      {
+        "overallSummary": "A comprehensive summary that combines all insights",
+        "dataConnections": "Explanation of connections and patterns in the data, incorporating context"
+      }
+      
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting.
+    `;
+    
+    // Create a specialized version of the analysis with the synthesis-focused prompt
+    return await analyzeNewsletterData(csvData, synthesisPrompt);
+  }, []);
 
   const performAnalysis = useCallback(async (query: string) => {
     if (!CSV_URL) {
@@ -38,9 +124,25 @@ const App: React.FC = () => {
       }
       const csvData = await response.text();
  
-      setLoadingMessage(`Analyzing data for: "${query}"`);
-      const result = await analyzeNewsletterData(csvData, query);
-      setAnalysisResult(result);
+      setLoadingMessage('Analyzing data patterns...');
+      const patternResult = await performPatternAnalysis(csvData, query);
+ 
+      setLoadingMessage('Analyzing context...');
+      const contextResult = await performContextAnalysis(csvData, query);
+ 
+      setLoadingMessage('Synthesizing insights...');
+      const synthesisResult = await performSynthesisAnalysis(csvData, query, patternResult, contextResult);
+ 
+      // Combine results from all three agents
+      const combinedResult: AnalysisResult = {
+        overallSummary: synthesisResult.overallSummary,
+        keyThemes: patternResult.keyThemes || [],
+        emergingTrends: patternResult.emergingTrends || [],
+        notableQuotes: contextResult.notableQuotes || [],
+        dataConnections: synthesisResult.dataConnections
+      };
+ 
+      setAnalysisResult(combinedResult);
  
     } catch (err) {
       console.error(err);
@@ -53,7 +155,7 @@ const App: React.FC = () => {
       setIsLoading(false);
       setLoadingMessage('');
     }
-  }, []);
+  }, [performPatternAnalysis, performContextAnalysis, performSynthesisAnalysis]);
 
   return (
     <div className="min-h-screen text-slate-200 font-sans flex flex-col selection:bg-fuchsia-500 selection:text-white">
