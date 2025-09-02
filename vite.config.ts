@@ -2,6 +2,9 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// Workaround for Vercel deployment issues with rollup native modules
+process.env.ROLLUP_NATIVE_DISABLE = 'true';
+
 export default defineConfig({
   base: './',
   plugins: [react()],
@@ -12,7 +15,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: [],
+      external: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-arm64-gnu'],
       output: {
         manualChunks: undefined
       }
@@ -20,9 +23,9 @@ export default defineConfig({
     target: 'esnext'
   },
   optimizeDeps: {
-    exclude: []
+    exclude: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-arm64-gnu']
   },
   ssr: {
-    noExternal: []
+    noExternal: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-arm64-gnu']
   }
 });
