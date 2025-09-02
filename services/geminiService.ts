@@ -13,7 +13,7 @@ export const analyzeNewsletterData = async (csvData: string, userQuery: string):
     const genAI = new GoogleGenerativeAI(API_KEY);
     
     // Get the generative model
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     
     // Create a prompt that combines the CSV data with the user's query
     const prompt = `
@@ -60,17 +60,36 @@ export const analyzeNewsletterData = async (csvData: string, userQuery: string):
       // Remove any markdown code block indicators
       cleanedText = cleanedText.replace(/```json/g, '').replace(/```/g, '').trim();
       
+      // If there are multiple JSON objects, take the first one
+      const jsonStart = cleanedText.indexOf('{');
+      const jsonEnd = cleanedText.lastIndexOf('}');
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1);
+      }
+      
       // Remove any leading/trailing whitespace
       cleanedText = cleanedText.trim();
       
       // Log the raw response for debugging
       console.log("Raw AI response:", cleanedText);
       
+      // Try to parse the JSON
       const analysisResult: AnalysisResult = JSON.parse(cleanedText);
       return analysisResult;
     } catch (parseError) {
       console.error("Failed to parse JSON response:", text);
-      throw new Error(`Failed to parse analysis response. The AI returned invalid JSON. Response: ${text.substring(0, 200)}...`);
+      // Try to extract JSON from the response using regex
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const analysisResult: AnalysisResult = JSON.parse(jsonMatch[0]);
+          return analysisResult;
+        } catch (secondParseError) {
+          console.error("Second parsing attempt failed:", secondParseError);
+        }
+      }
+      throw new Error(`Failed to parse analysis response. The AI returned invalid JSON. Response: ${text.substring(0, 500)}...`);
     }
 
   } catch (error) {

@@ -27,5 +27,8 @@ export default defineConfig({
   },
   ssr: {
     noExternal: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-arm64-gnu']
+  },
+  css: {
+    postcss: './postcss.config.js'
   }
 });
