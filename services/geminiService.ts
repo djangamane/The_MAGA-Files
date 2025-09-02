@@ -17,7 +17,9 @@ export const analyzeNewsletterData = async (csvData: string, userQuery: string):
     
     // Create a prompt that combines the CSV data with the user's query
     const prompt = `
-      Analyze the following CSV data and answer the user's question.
+      Act as an expert research analyst with advanced expertise in political science, sociology, and data analysis. Your task is to conduct a rigorous, academic-level analysis of the provided CSV data in response to the user's question.
+      
+      Approach this with the analytical depth and methodological rigor of a senior academic researcher. Provide detailed, nuanced insights that demonstrate sophisticated understanding of complex political and social dynamics. Your analysis should be thorough, evidence-based, and exhibit scholarly rigor.
       
       User's question: ${userQuery}
       
@@ -26,25 +28,25 @@ export const analyzeNewsletterData = async (csvData: string, userQuery: string):
       
       Please provide your analysis in the following JSON format:
       {
-        "overallSummary": "A brief overall summary of the data",
-        "keyThemes": ["List of key themes found in the data"],
+        "overallSummary": "A comprehensive, scholarly-level summary of the data that demonstrates deep analytical understanding. This should synthesize key insights into a coherent narrative with academic rigor.",
+        "keyThemes": ["List of key themes found in the data, each explained with detailed analysis of their significance and implications"],
         "emergingTrends": [
           {
-            "trend": "Name of the trend",
-            "description": "Description of the trend",
-            "supportingData": ["List of supporting data points"]
+            "trend": "Name of the trend with academic-level specificity and precision",
+            "description": "Comprehensive description of the trend, including its potential causes, implications, historical context, and significance. Provide detailed analysis that would be valuable to a researcher or policy analyst.",
+            "supportingData": ["List of specific data points that support this trend, with contextual details and analytical significance"]
           }
         ],
         "notableQuotes": [
           {
-            "quote": "A notable quote from the data",
-            "context": "Context for the quote"
+            "quote": "A particularly significant or revealing quote from the data, selected for its analytical value and insight into broader patterns",
+            "context": "Deep contextual analysis of the quote, including its historical significance, rhetorical strategies employed, ideological implications, and broader social or political meaning"
           }
         ],
-        "dataConnections": "Explanation of connections and patterns in the data"
+        "dataConnections": "Detailed explanation of connections and patterns in the data. Explain how different elements relate to each other, what the identified trends reveal about broader dynamics, and how the quotes illuminate key themes. Provide sophisticated analytical insights."
       }
       
-      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting.
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Prioritize depth and analytical sophistication over brevity.
     `;
     
     // Generate content

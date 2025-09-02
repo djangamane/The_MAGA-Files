@@ -23,7 +23,9 @@ const App: React.FC = () => {
   // Agent 1: Data Pattern Analysis - Focuses on identifying patterns, themes, and trends
   const performPatternAnalysis = useCallback(async (csvData: string, userQuery: string) => {
     const patternPrompt = `
-      Act as a Data Pattern Analyst Agent. Your role is to identify patterns, themes, and trends in the provided CSV data in response to the user's question.
+      Act as a Data Pattern Analyst Agent with expertise in sociological and political data analysis. Your role is to conduct a rigorous, academic-level analysis of patterns, themes, and trends in the provided CSV data in response to the user's question.
+      
+      Approach this task with the thoroughness of a graduate-level researcher. Identify subtle patterns, emerging trends, and underlying themes that might not be immediately obvious. Provide detailed, nuanced insights that would be valuable to an academic researcher or policy analyst.
       
       User's question: ${userQuery}
       
@@ -32,17 +34,17 @@ const App: React.FC = () => {
       
       Please provide your analysis in the following JSON format:
       {
-        "keyThemes": ["List of key themes found in the data"],
+        "keyThemes": ["List of key themes found in the data, with detailed explanations of their significance"],
         "emergingTrends": [
           {
-            "trend": "Name of the trend",
-            "description": "Description of the trend",
-            "supportingData": ["List of supporting data points"]
+            "trend": "Name of the trend with academic-level specificity",
+            "description": "Comprehensive description of the trend, including its potential causes, implications, and significance",
+            "supportingData": ["List of specific data points that support this trend, with contextual details"]
           }
         ]
       }
       
-      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting.
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor.
     `;
     
     // Create a specialized version of the analysis with the pattern-focused prompt
@@ -52,7 +54,9 @@ const App: React.FC = () => {
   // Agent 2: Context Analysis - Provides historical and contextual insights
   const performContextAnalysis = useCallback(async (csvData: string, userQuery: string) => {
     const contextPrompt = `
-      Act as a Context Analyst Agent. Your role is to provide historical and contextual insights from the provided CSV data in response to the user's question.
+      Act as a Context Analyst Agent with expertise in historical analysis and political science. Your role is to provide deep, scholarly-level historical and contextual insights from the provided CSV data in response to the user's question.
+      
+      Approach this with the analytical depth of a PhD-level historian or political scientist. Go beyond surface-level observations to provide nuanced historical context, trace the evolution of ideas or rhetoric, and identify significant events or shifts in the data. Your analysis should demonstrate sophisticated understanding of political and social dynamics.
       
       User's question: ${userQuery}
       
@@ -63,14 +67,14 @@ const App: React.FC = () => {
       {
         "notableQuotes": [
           {
-            "quote": "A notable quote from the data",
-            "context": "Context for the quote"
+            "quote": "A particularly significant or revealing quote from the data, selected for its analytical value",
+            "context": "Deep contextual analysis of the quote, including its historical significance, rhetorical strategies employed, and broader implications"
           }
         ],
-        "historicalInsights": ["List of historical insights from the data"]
+        "historicalInsights": ["List of detailed historical insights from the data, each with substantial analytical depth and scholarly rigor"]
       }
       
-      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting.
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor.
     `;
     
     // Create a specialized version of the analysis with the context-focused prompt
@@ -80,7 +84,9 @@ const App: React.FC = () => {
   // Agent 3: Synthesis Analysis - Combines insights from other agents
   const performSynthesisAnalysis = useCallback(async (csvData: string, userQuery: string, patternResult: any, contextResult: any) => {
     const synthesisPrompt = `
-      Act as a Synthesis Analyst Agent. Your role is to synthesize the insights from the Data Pattern Analyst and Context Analyst to create a comprehensive analysis that answers the user's question.
+      Act as a Synthesis Analyst Agent with expertise in interdisciplinary research and systems thinking. Your role is to synthesize the insights from the Data Pattern Analyst and Context Analyst into a comprehensive, scholarly-level analysis that answers the user's question.
+      
+      Approach this task with the integrative thinking of a senior research fellow. Your synthesis should reveal connections and insights that emerge only when the pattern analysis and contextual analysis are combined. Provide a nuanced, sophisticated understanding that demonstrates deep analytical reasoning.
       
       User's question: ${userQuery}
       
@@ -95,11 +101,11 @@ const App: React.FC = () => {
       
       Please provide your comprehensive analysis in the following JSON format:
       {
-        "overallSummary": "A comprehensive summary that combines all insights",
-        "dataConnections": "Explanation of connections and patterns in the data, incorporating context"
+        "overallSummary": "A comprehensive, scholarly-level summary that synthesizes all insights into a cohesive narrative. This should demonstrate deep understanding and analytical sophistication, integrating patterns and context into a unified perspective.",
+        "dataConnections": "Detailed explanation of connections and patterns in the data, incorporating historical and contextual insights. Explain how the identified trends relate to the historical context, what the quotes reveal about broader patterns, and how all elements form a coherent analytical framework."
       }
       
-      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting.
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor.
     `;
     
     // Create a specialized version of the analysis with the synthesis-focused prompt
