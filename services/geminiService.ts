@@ -46,7 +46,7 @@ export const analyzeNewsletterData = async (csvData: string, userQuery: string):
         "dataConnections": "Detailed explanation of connections and patterns in the data. Explain how different elements relate to each other, what the identified trends reveal about broader dynamics, and how the quotes illuminate key themes. Provide sophisticated analytical insights."
       }
       
-      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Prioritize depth and analytical sophistication over brevity.
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Prioritize depth and analytical sophistication over brevity. Keep your response under 10000 characters to ensure proper formatting.
     `;
     
     // Generate content
@@ -91,6 +91,31 @@ export const analyzeNewsletterData = async (csvData: string, userQuery: string):
           console.error("Second parsing attempt failed:", secondParseError);
         }
       }
+      
+      // If parsing still fails, try to create a partial result from available data
+      try {
+        // Attempt to extract partial information
+        const partialResult: AnalysisResult = {
+          overallSummary: "Analysis completed but response was too complex to fully parse. Please try a more specific query for detailed results.",
+          keyThemes: [],
+          emergingTrends: [],
+          notableQuotes: [],
+          dataConnections: "The AI returned a detailed analysis but the response was too long or complex to parse completely. This often happens when the dataset is very rich and the AI provides extensive academic-level insights."
+        };
+        
+        // Try to extract any usable parts
+        if (text.includes('"overallSummary"')) {
+          const summaryMatch = text.match(/"overallSummary"\s*:\s*"([^"]+)"/);
+          if (summaryMatch && summaryMatch[1]) {
+            partialResult.overallSummary = summaryMatch[1].substring(0, 500) + "...";
+          }
+        }
+        
+        return partialResult;
+      } catch (partialError) {
+        console.error("Failed to create partial result:", partialError);
+      }
+      
       throw new Error(`Failed to parse analysis response. The AI returned invalid JSON. Response: ${text.substring(0, 500)}...`);
     }
 
