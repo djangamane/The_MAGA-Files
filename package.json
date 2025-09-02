@@ -6,30 +6,25 @@
   "scripts": {
     "dev": "vite",
     "start": "vercel dev",
-    "postinstall": "patch-package",
+    "postinstall": "node -e \"const fs = require('fs'); const path = require('path'); const modulePath = path.join('node_modules', '@rollup', 'rollup-linux-x64-gnu'); try { if (fs.existsSync(modulePath)) { fs.rmSync(modulePath, { recursive: true }); console.log('Removed problematic module'); } } catch (e) { console.log('Module not found or could not be removed, continuing...'); }\"",
     "prebuild": "node -e \"const fs = require('fs'); const path = require('path'); const modulePath = path.join('node_modules', '@rollup', 'rollup-linux-x64-gnu'); try { if (fs.existsSync(modulePath)) { fs.rmSync(modulePath, { recursive: true }); console.log('Removed problematic module'); } } catch (e) { console.log('Module not found or could not be removed, continuing...'); }\"",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.15.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "rollup": "^4.24.0"
+    "@google/generative-ai": "^0.15.0",
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
     "@vitejs/plugin-react": "^4.3.1",
-    "patch-package": "^8.0.0",
+    "@types/node": "^22.14.0",
     "typescript": "~5.8.2",
     "vite": "^5.4.14"
-  },
-  "resolutions": {
-    "rollup": "4.24.0"
   }
 }
