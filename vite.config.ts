@@ -12,7 +12,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-arm64-gnu'],
+      external: [],
       output: {
         manualChunks: undefined
       }
@@ -20,9 +20,9 @@ export default defineConfig({
     target: 'esnext'
   },
   optimizeDeps: {
-    exclude: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-arm64-gnu']
+    exclude: []
   },
   ssr: {
-    noExternal: ['@rollup/rollup-linux-x64-gnu', '@rollup/rollup-linux-arm64-gnu']
+    noExternal: []
   }
 });
