@@ -11,7 +11,11 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: []
-    }
+      external: [],
+      output: {
+        manualChunks: undefined
+      }
+    },
+    target: 'esnext'
   }
 });
