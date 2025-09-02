@@ -8,7 +8,7 @@
     "start": "vercel dev",
     "postinstall": "node -e \"process.env.ROLLUP_NATIVE_DISABLE = 'true'; const fs = require('fs'); const path = require('path'); const modulePath = path.join('node_modules', '@rollup', 'rollup-linux-x64-gnu'); try { if (fs.existsSync(modulePath)) { fs.rmSync(modulePath, { recursive: true }); console.log('Removed problematic module'); } } catch (e) { console.log('Module not found or could not be removed, continuing...'); }\"",
     "prebuild": "node -e \"process.env.ROLLUP_NATIVE_DISABLE = 'true'; const fs = require('fs'); const path = require('path'); const modulePath = path.join('node_modules', '@rollup', 'rollup-linux-x64-gnu'); try { if (fs.existsSync(modulePath)) { fs.rmSync(modulePath, { recursive: true }); console.log('Removed problematic module'); } } catch (e) { console.log('Module not found or could not be removed, continuing...'); }\"",
-    "build": "ROLLUP_NATIVE_DISABLE=true tsc && ROLLUP_NATIVE_DISABLE=true vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
