@@ -17,5 +17,8 @@ export default defineConfig({
       }
     },
     target: 'esnext'
+  },
+  optimizeDeps: {
+    exclude: ['@rollup/rollup-linux-x64-gnu']
   }
 });
