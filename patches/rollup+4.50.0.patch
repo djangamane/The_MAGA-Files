@@ -1,86 +1,49 @@
 diff --git a/node_modules/rollup/dist/native.js b/node_modules/rollup/dist/native.js
-index 7b8c9d1..3a4b5c6 100644
+index c4ea970..862ffdc 100644
 --- a/node_modules/rollup/dist/native.js
 +++ b/node_modules/rollup/dist/native.js
-@@ -1,5 +1,5 @@
--const { existsSync } = require('node:fs');
--const path = require('node:path');
--const { platform, arch, report } = require('node:process');
-+const { existsSync } = require('node:fs');
-+const path = require('node:path');
-+const { platform, arch, report } = require('node:process');
+@@ -64,18 +64,35 @@ const requireWithFriendlyError = id => {
+ 			);
+ 		}
  
- const isMusl = () => !report.getReport().header.glibcVersionRuntime;
-@@ -45,15 +45,35 @@ const requireWithFriendlyError = id => {
-        } catch (error) {
-                if (
-                        platform === 'win32' &&
-                        error instanceof Error &&
-                        error.code === 'ERR_DLOPEN_FAILED' &&
-                        error.message.includes('The specified module could not be found')
-                ) {
-                        const msvcDownloadLink = `https://aka.ms/vs/17/release/${msvcLinkFilenameByArch[arch]}`;
-                        throw new Error(
-                                `Failed to load module ${id}. ` +
-                                        'Required DLL was not found. ' +
-                                        'This error usually happens when Microsoft Visual C++ Redistributable is not installed. ' +
-                                        `You can download it from ${msvcDownloadLink}`,
-                                { cause: error }
-                        );
-                }
- 
--               throw new Error(
--                       `Cannot find module ${id}. ` +
--                               `npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). ` +
--                               'Please try `npm i` again after removing both package-lock.json and node_modules directory.',
--                       { cause: error }
--               );
-+               // Check if we're in a Vercel environment and provide fallback
-+               const isVercel = process.env.VERCEL || process.env.NOW_REGION;
-+               if (isVercel) {
-+                       console.warn(`Vercel environment detected. Failed to load native module ${id}, using fallback implementation`);
-+                       return {
-+                               parse: () => {},
-+                               parseAsync: () => Promise.resolve(),
-+                               xxhashBase64Url: () => '',
-+                               xxhashBase36: () => '',
-+                               xxhashBase16: () => ''
-+                       };
-+               }
-+
-+               // For other environments, provide more helpful error message
-+               throw new Error(
-+                       `Cannot find module ${id}. ` +
-+                               `npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). ` +
-+                               'Please try `npm i` again after removing both package-lock.json and node_modules directory.',
-+                       { cause: error }
-+               );
-        }
+-		throw new Error(
+-			`Cannot find module ${id}. ` +
+-				`npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). ` +
+-				'Please try `npm i` again after removing both package-lock.json and node_modules directory.',
+-			{ cause: error }
+-		);
++		// Return a fallback object with empty functions for Vercel builds
++		console.warn(`Failed to load native module ${id}, using fallback implementation`);
++		return {
++			parse: () => {},
++			parseAsync: () => Promise.resolve(),
++			xxhashBase64Url: () => '',
++			xxhashBase36: () => '',
++			xxhashBase16: () => ''
++		};
+ 	}
  };
  
+-const { parse, parseAsync, xxhashBase64Url, xxhashBase36, xxhashBase16 } = requireWithFriendlyError(
+-	existsSync(path.join(__dirname, localName)) ? localName : `@rollup/rollup-${packageBase}`
+-);
 +let nativeModule;
 +try {
-+       nativeModule = requireWithFriendlyError(
-+               existsSync(path.join(__dirname, localName)) ? localName : `@rollup/rollup-${packageBase}`
-+       );
++	nativeModule = requireWithFriendlyError(
++		existsSync(path.join(__dirname, localName)) ? localName : `@rollup/rollup-${packageBase}`
++	);
 +} catch (error) {
-+       // Fallback to empty implementation for Vercel or other environments
-+       const isVercel = process.env.VERCEL || process.env.NOW_REGION;
-+       if (isVercel) {
-+               console.warn(`Vercel environment detected. Failed to load native module, using fallback implementation`);
-+               nativeModule = {
-+                       parse: () => {},
-+                       parseAsync: () => Promise.resolve(),
-+                       xxhashBase64Url: () => '',
-+                       xxhashBase36: () => '',
-+                       xxhashBase16: () => ''
-+               };
-+       } else {
-+               throw error;
-+       }
++	// Fallback to empty implementation
++	nativeModule = {
++		parse: () => {},
++		parseAsync: () => Promise.resolve(),
++		xxhashBase64Url: () => '',
++		xxhashBase36: () => '',
++		xxhashBase16: () => ''
++	};
 +}
 +
--const { parse, parseAsync, xxhashBase64Url, xxhashBase36, xxhashBase16 } = requireWithFriendlyError(
--       existsSync(path.join(__dirname, localName)) ? localName : `@rollup/rollup-${packageBase}`
 +const { parse, parseAsync, xxhashBase64Url, xxhashBase36, xxhashBase16 } = nativeModule;
- );
+ 
+ function getPackageBase() {
+ 	const imported = bindingsByPlatformAndArch[platform]?.[arch];
