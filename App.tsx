@@ -208,9 +208,8 @@ const App: React.FC = () => {
 
       <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center gap-12">
         <div className="w-full flex flex-col items-center text-center mt-8">
-          <div className="h-20 w-20 mb-6 relative">
-            <Logo />
-          </div>
+          <Logo />
+          <div className="h-28" /> {/* Spacer to push content down */}
           <h1 className="text-4xl md:text-5xl font-bold text-slate-100 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
             The MAGA Files: Your AI Truth Machine
           </h1>
