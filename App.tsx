@@ -23,15 +23,24 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentQuery, setCurrentQuery] = useState<string>('');
   const [user, setUser] = useState<any>(null);
-  const [showAuth, setShowAuth] = useState<boolean>(true);
+  const [showAuth, setShowAuth] = useState<boolean>(false); // Changed default to false
   const [isSubscriber, setIsSubscriber] = useState<boolean>(false);
+  const [guestQueryCount, setGuestQueryCount] = useState<number>(0);
+
+  // Initialize guest query count from localStorage
+  useEffect(() => {
+    const savedCount = localStorage.getItem('guestQueryCount');
+    if (savedCount) {
+      setGuestQueryCount(parseInt(savedCount, 10));
+    }
+  }, []);
 
   // Check for existing session
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
-      setShowAuth(!session?.user);
+      setShowAuth(false); // Don't show auth by default
       
       if (session?.user) {
         // Check if user is a subscriber
@@ -47,7 +56,7 @@ const App: React.FC = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
-      setShowAuth(!session?.user);
+      setShowAuth(false); // Don't show auth by default
       
       if (session?.user) {
         // Check if user is a subscriber
@@ -66,61 +75,109 @@ const App: React.FC = () => {
     setIsSubscriber(true);
   }, []);
 
+  const canGuestPerformQuery = (): boolean => {
+    return guestQueryCount < 3;
+  };
+
+  const incrementGuestQueryCount = () => {
+    const newCount = guestQueryCount + 1;
+    setGuestQueryCount(newCount);
+    localStorage.setItem('guestQueryCount', newCount.toString());
+  };
+
   const performAnalysis = useCallback(async (query: string) => {
-    if (!user) {
-      setShowAuth(true);
-      return;
-    }
-
-    if (!CSV_URL) {
-      setError("Data source URL is not configured. Please set VITE_CSV_URL in your environment variables.");
-      return;
-    }
-
-    // Check if user can perform query
-    const canQuery = await canUserPerformQuery(user.id);
-    if (!canQuery) {
-      setError("You've reached your daily query limit. Please upgrade to unlimited access.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setAnalysisResult(null);
-    setCurrentQuery(query);
- 
-    try {
-      setLoadingMessage('Fetching latest data...');
-      const response = await fetch(CSV_URL);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data from the source. Status: ${response.status}`);
+    // If user is authenticated, proceed with normal flow
+    if (user) {
+      // Check if user can perform query
+      const canQuery = await canUserPerformQuery(user.id);
+      if (!canQuery) {
+        setError("You've reached your daily query limit. Please upgrade to unlimited access.");
+        return;
       }
-      const csvData = await response.text();
- 
-      setLoadingMessage(`Analyzing data for: "${query}"`);
-      const result = await analyzeNewsletterData(csvData, query);
-      setAnalysisResult(result);
-      
-      // Save analysis for premium users
-      await saveUserAnalysis(user.id, query, result);
-      
-      // Send email to subscribers
-      if (isSubscriber) {
-        await sendAnalysisToUser(user.id, query, result);
+
+      setIsLoading(true);
+      setError(null);
+      setAnalysisResult(null);
+      setCurrentQuery(query);
+  
+      try {
+        setLoadingMessage('Fetching latest data...');
+        const response = await fetch(CSV_URL);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data from the source. Status: ${response.status}`);
+        }
+        const csvData = await response.text();
+  
+        setLoadingMessage(`Analyzing data for: "${query}"`);
+        const result = await analyzeNewsletterData(csvData, query);
+        setAnalysisResult(result);
+        
+        // Save analysis for premium users
+        await saveUserAnalysis(user.id, query, result);
+        
+        // Send email to subscribers
+        if (isSubscriber) {
+          await sendAnalysisToUser(user.id, query, result);
+        }
+  
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) {
+          setError(`An error occurred during analysis: ${err.message}. Please check the console for more details.`);
+        } else {
+          setError("An unknown error occurred during analysis. Please try a different query.");
+        }
+      } finally {
+        setIsLoading(false);
+        setLoadingMessage('');
       }
- 
-    } catch (err) {
-      console.error(err);
-      if (err instanceof Error) {
-        setError(`An error occurred during analysis: ${err.message}. Please check the console for more details.`);
-      } else {
-        setError("An unknown error occurred during analysis. Please try a different query.");
+    } else {
+      // Guest user flow
+      if (!canGuestPerformQuery()) {
+        // Show auth when guest has used all free queries
+        setShowAuth(true);
+        setError("You've used all your free queries. Please sign up to continue.");
+        return;
       }
-    } finally {
-      setIsLoading(false);
-      setLoadingMessage('');
+
+      if (!CSV_URL) {
+        setError("Data source URL is not configured. Please set VITE_CSV_URL in your environment variables.");
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+      setAnalysisResult(null);
+      setCurrentQuery(query);
+  
+      try {
+        setLoadingMessage('Fetching latest data...');
+        const response = await fetch(CSV_URL);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data from the source. Status: ${response.status}`);
+        }
+        const csvData = await response.text();
+  
+        setLoadingMessage(`Analyzing data for: "${query}"`);
+        const result = await analyzeNewsletterData(csvData, query);
+        setAnalysisResult(result);
+        
+        // Increment guest query count
+        incrementGuestQueryCount();
+  
+      } catch (err) {
+        console.error(err);
+        if (err instanceof Error) {
+          setError(`An error occurred during analysis: ${err.message}. Please check the console for more details.`);
+        } else {
+          setError("An unknown error occurred during analysis. Please try a different query.");
+        }
+      } finally {
+        setIsLoading(false);
+        setLoadingMessage('');
+      }
     }
-  }, [user, isSubscriber]);
+  }, [user, isSubscriber, guestQueryCount]);
 
   const handleAuthSuccess = () => {
     setShowAuth(false);
@@ -130,7 +187,11 @@ const App: React.FC = () => {
     await supabase.auth.signOut();
     setUser(null);
     setIsSubscriber(false);
-    setShowAuth(true);
+    setShowAuth(false);
+  };
+
+  const handleContinueAsGuest = () => {
+    setShowAuth(false);
   };
 
   return (
@@ -160,6 +221,16 @@ const App: React.FC = () => {
                 </button>
               </div>
             )}
+            {!user && (
+              <div className="text-right">
+                <button 
+                  onClick={() => setShowAuth(true)}
+                  className="text-sm text-fuchsia-400 hover:text-fuchsia-300"
+                >
+                  Sign In / Sign Up
+                </button>
+              </div>
+            )}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-slate-100 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
             The MAGA Files: Your AI Truth Machine
@@ -167,10 +238,45 @@ const App: React.FC = () => {
           <p className="text-lg text-slate-400 max-w-2xl mx-auto">
             Ask any question. Expose the narratives. Follow the data.
           </p>
+          {!user && (
+            <p className="text-sm text-slate-500 mt-2">
+              {3 - guestQueryCount} free queries remaining
+            </p>
+          )}
         </div>
         
         {showAuth ? (
-          <AuthComponent onAuthSuccess={handleAuthSuccess} />
+          <div className="w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Access Required</h2>
+              {!user && (
+                <button 
+                  onClick={handleContinueAsGuest}
+                  className="text-sm text-fuchsia-400 hover:text-fuchsia-300"
+                >
+                  Back
+                </button>
+              )}
+            </div>
+            {user ? (
+              <AuthComponent onAuthSuccess={handleAuthSuccess} />
+            ) : (
+              <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
+                <p className="text-slate-300 mb-4">
+                  You've used all your free queries. Sign up to get unlimited access to The MAGA Files.
+                </p>
+                <AuthComponent onAuthSuccess={handleAuthSuccess} />
+                <div className="mt-4 text-center">
+                  <button 
+                    onClick={handleContinueAsGuest}
+                    className="text-fuchsia-400 hover:text-fuchsia-300"
+                  >
+                    Continue as Guest (0 queries remaining)
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <>
             <AnalysisDashboard onAnalyze={performAnalysis} isLoading={isLoading} />
