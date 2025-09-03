@@ -30,7 +30,7 @@ const App: React.FC = () => {
       User's question: ${userQuery}
       
       CSV Data:
-      ${csvData.substring(0, 5000)} // Limit data size to prevent overly long responses
+      ${csvData}
       
       Please provide your analysis in the following JSON format:
       {
@@ -44,7 +44,7 @@ const App: React.FC = () => {
         ]
       }
       
-      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Keep your response under 8000 characters.
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Provide as much detail as needed for a comprehensive analysis.
     `;
     
     // Create a specialized version of the analysis with the pattern-focused prompt
@@ -61,7 +61,7 @@ const App: React.FC = () => {
       User's question: ${userQuery}
       
       CSV Data:
-      ${csvData.substring(0, 5000)} // Limit data size to prevent overly long responses
+      ${csvData}
       
       Please provide your analysis in the following JSON format:
       {
@@ -74,7 +74,7 @@ const App: React.FC = () => {
         "historicalInsights": ["List of detailed historical insights from the data, each with substantial analytical depth and scholarly rigor"]
       }
       
-      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Keep your response under 8000 characters.
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Provide as much detail as needed for a comprehensive analysis.
     `;
     
     // Create a specialized version of the analysis with the context-focused prompt
@@ -91,13 +91,13 @@ const App: React.FC = () => {
       User's question: ${userQuery}
       
       CSV Data:
-      ${csvData.substring(0, 3000)} // Limit data size to prevent overly long responses
+      ${csvData}
       
       Data Pattern Analysis Results:
-      ${JSON.stringify(patternResult, null, 2).substring(0, 2000)}
+      ${JSON.stringify(patternResult, null, 2)}
       
       Context Analysis Results:
-      ${JSON.stringify(contextResult, null, 2).substring(0, 2000)}
+      ${JSON.stringify(contextResult, null, 2)}
       
       Please provide your comprehensive analysis in the following JSON format:
       {
@@ -105,7 +105,7 @@ const App: React.FC = () => {
         "dataConnections": "Detailed explanation of connections and patterns in the data, incorporating historical and contextual insights. Explain how the identified trends relate to the historical context, what the quotes reveal about broader patterns, and how all elements form a coherent analytical framework."
       }
       
-      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Keep your response under 8000 characters.
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Provide as much detail as needed for a comprehensive analysis.
     `;
     
     // Create a specialized version of the analysis with the synthesis-focused prompt

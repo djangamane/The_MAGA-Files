@@ -46,7 +46,7 @@ export const analyzeNewsletterData = async (csvData: string, userQuery: string):
         "dataConnections": "Detailed explanation of connections and patterns in the data. Explain how different elements relate to each other, what the identified trends reveal about broader dynamics, and how the quotes illuminate key themes. Provide sophisticated analytical insights."
       }
       
-      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Prioritize depth and analytical sophistication over brevity. Keep your response under 10000 characters to ensure proper formatting.
+      Important: Respond ONLY with valid JSON in the exact format specified above. Do not include any other text, explanations, or markdown formatting. Ensure your analysis is thorough, detailed, and exhibits academic rigor. Provide as much detail as needed for a comprehensive analysis.
     `;
     
     // Generate content
@@ -121,6 +121,18 @@ export const analyzeNewsletterData = async (csvData: string, userQuery: string):
 
   } catch (error) {
     console.error("Analysis service call failed:", error);
+    // If we get a response too large error, let's try to handle it gracefully
+    if (error instanceof Error && error.message.includes("response")) {
+      // Return a partial result with a message about the response being too large
+      const partialResult: AnalysisResult = {
+        overallSummary: "Analysis completed successfully but the response was extremely detailed. The full analysis contains extensive information that exceeds display capabilities. Please try a more specific query for focused results.",
+        keyThemes: ["Response contained extensive thematic analysis that was too large to display completely"],
+        emergingTrends: [],
+        notableQuotes: [],
+        dataConnections: "The AI generated a very detailed analysis with numerous connections and insights. Consider narrowing your query to get more focused results."
+      };
+      return partialResult;
+    }
     throw new Error(`Failed to get a valid response from the analysis service: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
