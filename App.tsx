@@ -73,10 +73,6 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleUpgradeSuccess = useCallback(() => {
-    setIsSubscriber(true);
-  }, []);
-
   const canGuestPerformQuery = (): boolean => {
     return guestQueryCount < 3;
   };
@@ -180,10 +176,6 @@ const App: React.FC = () => {
       }
     }
   }, [user, isSubscriber, guestQueryCount]);
-
-  const handleAuthSuccess = () => {
-    setShowAuth(false);
-  };
 
   const handleAuthSuccess = () => {
     setShowAuth(false);
