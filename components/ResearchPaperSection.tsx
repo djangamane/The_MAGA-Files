@@ -21,7 +21,7 @@ export const ResearchPaperSection: React.FC = () => {
                 </div>
                 <div className="text-center">
                     <a 
-                        href="/maga.pdf" 
+                        href="/MAGA.pdf" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-block bg-slate-700 text-slate-100 font-bold py-3 px-6 rounded-md hover:bg-slate-600 transition-colors text-center w-full"

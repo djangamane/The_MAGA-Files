@@ -10,6 +10,8 @@ const PREDEFINED_QUERIES = [
     "Summarize the key themes across all news sources.",
     "Identify emerging trends or shifts in language over time.",
     "Extract the most frequently mentioned figures, organizations, or locations.",
+    "What's the latest MAGA news and developments?",
+    "How is MAGA rhetoric evolving in recent communications?"
 ];
 
 export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ onAnalyze, isLoading }) => {
@@ -33,14 +35,14 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ onAnalyze,
         <div className="mb-4">
           <h2 className="text-2xl font-bold text-slate-100">Analysis Console</h2>
         </div>
-        <p className="text-slate-400 mb-4">Enter a question to analyze your data, or select a predefined query below.</p>
+        <p className="text-slate-400 mb-4">Analyze the MAGA Files Database, or enter a custom question below.</p>
         
         <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-2 mb-4">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g., Query the database..."
+            placeholder="e.g., What are the latest trends in MAGA communications?"
             className="flex-grow bg-slate-800 border border-slate-600 rounded-md p-3 focus:ring-2 focus:ring-fuchsia-500 focus:outline-none transition-shadow"
             disabled={isLoading}
             aria-label="Analysis Query Input"
