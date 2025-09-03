@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { PaymentComponent } from './PaymentComponent';
+import React from 'react';
 
 const CheckIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -8,39 +7,12 @@ const CheckIcon = () => (
 );
 
 interface MonetizationSectionProps {
-  userId?: string;
   isSubscriber?: boolean;
-  onUpgradeSuccess?: () => void;
 }
 
 export const MonetizationSection: React.FC<MonetizationSectionProps> = ({ 
-  userId, 
   isSubscriber = false,
-  onUpgradeSuccess 
 }) => {
-  const [showPayment, setShowPayment] = useState(false);
-
-  const handlePaymentSuccess = () => {
-    setShowPayment(false);
-    if (onUpgradeSuccess) {
-      onUpgradeSuccess();
-    }
-  };
-
-  const handlePaymentCancel = () => {
-    setShowPayment(false);
-  };
-
-  if (showPayment && userId) {
-    return (
-      <PaymentComponent 
-        userId={userId} 
-        onPaymentSuccess={handlePaymentSuccess}
-        onPaymentCancel={handlePaymentCancel}
-      />
-    );
-  }
-
   return (
     <section className="text-center">
       <h2 className="text-3xl font-bold mb-2">Unlock the Full Picture</h2>
@@ -85,7 +57,7 @@ export const MonetizationSection: React.FC<MonetizationSectionProps> = ({
                     <CheckIcon /> <span>Unlimited queries</span>
                 </li>
                 <li className="flex items-center gap-3">
-                    <CheckIcon /> <span>Receive the analysis in their email</span>
+                    <CheckIcon /> <span>Receive the analysis in your email</span>
                 </li>
                 <li className="flex items-center gap-3">
                     <CheckIcon /> <span>Priority access to new features</span>
@@ -96,12 +68,14 @@ export const MonetizationSection: React.FC<MonetizationSectionProps> = ({
                 Premium User
               </button>
             ) : (
-              <button 
-                onClick={() => setShowPayment(true)}
-                className="mt-auto w-full bg-fuchsia-600 text-white font-bold py-3 px-6 rounded-md hover:bg-fuchsia-500 transition-colors"
+              <a
+                href="https://www.paypal.com/ncp/payment/8C4NL9DQC5WL8"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-auto block text-center w-full bg-fuchsia-600 text-white font-bold py-3 px-6 rounded-md hover:bg-fuchsia-500 transition-colors"
               >
                 $10 One-Time Unlock
-              </button>
+              </a>
             )}
         </div>
       </div>

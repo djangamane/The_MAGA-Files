@@ -291,11 +291,7 @@ const App: React.FC = () => {
             <div className="w-full max-w-5xl space-y-16">
               <ResearchPaperSection />
               <WhyItMattersSection />
-              <MonetizationSection 
-                userId={user?.id} 
-                isSubscriber={isSubscriber}
-                onUpgradeSuccess={handleUpgradeSuccess}
-              />
+              <MonetizationSection isSubscriber={isSubscriber} />
             </div>
           </>
         )}
