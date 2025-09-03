@@ -204,10 +204,10 @@ const App: React.FC = () => {
       </div>
       <div className="fixed top-0 left-0 w-full h-full bg-slate-900/80 -z-10"></div>
 
-      <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center gap-6">
-        <div className="w-full text-center">
-          <div className="flex justify-center -mt-4">
-            <div className="h-16 w-16">
+      <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center gap-12">
+        <div className="w-full text-center mt-8">
+          <div className="flex justify-center mb-6">
+            <div className="h-20 w-20">
               <Logo />
             </div>
           </div>
