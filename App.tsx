@@ -206,31 +206,10 @@ const App: React.FC = () => {
 
       <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center gap-12">
         <div className="w-full text-center mt-8">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-center mb-6">
             <div className="h-20 w-20">
               <Logo />
             </div>
-            {user && (
-              <div className="text-right">
-                <p className="text-slate-300">Welcome, {user.email}</p>
-                <button 
-                  onClick={handleSignOut}
-                  className="text-sm text-fuchsia-400 hover:text-fuchsia-300"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
-            {!user && (
-              <div className="text-right">
-                <button 
-                  onClick={() => setShowAuth(true)}
-                  className="text-sm text-fuchsia-400 hover:text-fuchsia-300"
-                >
-                  Sign In / Sign Up
-                </button>
-              </div>
-            )}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-slate-100 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
             The MAGA Files: Your AI Truth Machine
@@ -280,6 +259,18 @@ const App: React.FC = () => {
         ) : (
           <>
             <AnalysisDashboard onAnalyze={performAnalysis} isLoading={isLoading} />
+            
+            {/* Sign In / Sign Up button for guests */}
+            {!user && (
+              <div className="w-full max-w-3xl text-center">
+                <button 
+                  onClick={() => setShowAuth(true)}
+                  className="text-sm text-fuchsia-400 hover:text-fuchsia-300"
+                >
+                  Sign In / Sign Up for Unlimited Access
+                </button>
+              </div>
+            )}
 
             <div className="w-full max-w-5xl min-h-[10rem]">
               {isLoading && (
