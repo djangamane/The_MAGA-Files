@@ -25,15 +25,17 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result, curren
       case 'summary':
         return (
           <InsightCard title="Overall Summary">
-            <p className="text-slate-300 leading-relaxed">{result.overallSummary}</p>
+            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{result.overallSummary}</p>
           </InsightCard>
         );
       case 'themes':
         return (
           <InsightCard title="Key Themes">
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-4">
               {result.keyThemes.map((theme, index) => (
-                <span key={index} className="bg-slate-700 text-cyan-300 text-sm font-medium px-3 py-1 rounded-full">{theme}</span>
+                <div key={index} className="p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+                  <p className="text-slate-300 leading-relaxed">{theme}</p>
+                </div>
               ))}
             </div>
           </InsightCard>
@@ -44,9 +46,10 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result, curren
             <div className="space-y-4">
               {result.emergingTrends.map((trend, index) => (
                 <div key={index} className="p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-                  <h4 className="font-bold text-fuchsia-400">{trend.trend}</h4>
-                  <p className="text-slate-300 mt-1 mb-3">{trend.description}</p>
+                  <h4 className="font-bold text-fuchsia-400 text-lg">{trend.trend}</h4>
+                  <p className="text-slate-300 mt-2 mb-3 whitespace-pre-wrap">{trend.description}</p>
                   <div className="border-l-2 border-slate-600 pl-3 space-y-2">
+                    <h5 className="font-medium text-slate-200">Supporting Data:</h5>
                     {trend.supportingData.map((data, i) => (
                       <p key={i} className="text-sm text-slate-400 italic">"{data}"</p>
                     ))}
@@ -72,9 +75,10 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result, curren
       case 'connections':
         return (
           <InsightCard title="Data Connections">
-            <p className="text-slate-300 leading-relaxed">{result.dataConnections}</p>
+            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{result.dataConnections}</p>
           </InsightCard>
         );
+
       default:
         return null;
     }
