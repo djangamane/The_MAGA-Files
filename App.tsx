@@ -1,3 +1,5 @@
+// LOGO POSITION TEST - This is a test comment to see if changes persist
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { AnalysisDashboard } from './components/AnalysisDashboard';
 import { AnalysisResults } from './components/AnalysisResults';
