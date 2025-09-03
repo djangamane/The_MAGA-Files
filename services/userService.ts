@@ -145,8 +145,8 @@ export const sendAnalysisToUser = async (
 
   try {
     // Send the analysis result to the user's email
-    const success = await sendAnalysisEmail(user.email, query, result);
-    return success;
+    const response = await sendAnalysisEmail(user.email, query, result);
+    return response.success;
   } catch (error) {
     console.error('Error sending analysis email:', error);
     return false;
