@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { AnalysisDashboard } from './components/AnalysisDashboard';
 import { AnalysisResults } from './components/AnalysisResults';
 import { ResearchPaperSection } from './components/ResearchPaperSection';
@@ -6,9 +6,12 @@ import { WhyItMattersSection } from './components/WhyItMattersSection';
 import { MonetizationSection } from './components/MonetizationSection';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { Logo } from './components/Logo';
+import { AuthComponent } from './components/AuthComponent';
 
 import type { AnalysisResult } from './types';
 import { analyzeNewsletterData } from './services/geminiService';
+import { supabase } from './services/supabaseClient';
+import { canUserPerformQuery, saveUserAnalysis, sendAnalysisToUser, getUser } from './services/userService';
 
 // The CSV URL is now managed via environment variables for easy configuration on Vercel.
 const CSV_URL = import.meta.env.VITE_CSV_URL;
@@ -19,12 +22,68 @@ const App: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [currentQuery, setCurrentQuery] = useState<string>('');
+  const [user, setUser] = useState<any>(null);
+  const [showAuth, setShowAuth] = useState<boolean>(true);
+  const [isSubscriber, setIsSubscriber] = useState<boolean>(false);
+
+  // Check for existing session
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+      setShowAuth(!session?.user);
+      
+      if (session?.user) {
+        // Check if user is a subscriber
+        const userData = await getUser(session.user.id);
+        if (userData) {
+          setIsSubscriber(userData.is_subscriber);
+        }
+      }
+    };
+
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      setShowAuth(!session?.user);
+      
+      if (session?.user) {
+        // Check if user is a subscriber
+        getUser(session.user.id).then(userData => {
+          if (userData) {
+            setIsSubscriber(userData.is_subscriber);
+          }
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleUpgradeSuccess = useCallback(() => {
+    setIsSubscriber(true);
+  }, []);
 
   const performAnalysis = useCallback(async (query: string) => {
+    if (!user) {
+      setShowAuth(true);
+      return;
+    }
+
     if (!CSV_URL) {
       setError("Data source URL is not configured. Please set VITE_CSV_URL in your environment variables.");
       return;
     }
+
+    // Check if user can perform query
+    const canQuery = await canUserPerformQuery(user.id);
+    if (!canQuery) {
+      setError("You've reached your daily query limit. Please upgrade to unlimited access.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setAnalysisResult(null);
@@ -41,6 +100,14 @@ const App: React.FC = () => {
       setLoadingMessage(`Analyzing data for: "${query}"`);
       const result = await analyzeNewsletterData(csvData, query);
       setAnalysisResult(result);
+      
+      // Save analysis for premium users
+      await saveUserAnalysis(user.id, query, result);
+      
+      // Send email to subscribers
+      if (isSubscriber) {
+        await sendAnalysisToUser(user.id, query, result);
+      }
  
     } catch (err) {
       console.error(err);
@@ -53,7 +120,18 @@ const App: React.FC = () => {
       setIsLoading(false);
       setLoadingMessage('');
     }
-  }, []);
+  }, [user, isSubscriber]);
+
+  const handleAuthSuccess = () => {
+    setShowAuth(false);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsSubscriber(false);
+    setShowAuth(true);
+  };
 
   return (
     <div className="min-h-screen text-slate-200 font-sans flex flex-col selection:bg-fuchsia-500 selection:text-white">
@@ -67,8 +145,21 @@ const App: React.FC = () => {
 
       <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center gap-12">
         <div className="w-full text-center mt-8">
-          <div className="flex justify-center items-center mb-6 h-60">
-            <Logo />
+          <div className="flex justify-between items-center mb-6">
+            <div className="h-20 w-20">
+              <Logo />
+            </div>
+            {user && (
+              <div className="text-right">
+                <p className="text-slate-300">Welcome, {user.email}</p>
+                <button 
+                  onClick={handleSignOut}
+                  className="text-sm text-fuchsia-400 hover:text-fuchsia-300"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-slate-100 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
             The MAGA Files: Your AI Truth Machine
@@ -78,30 +169,40 @@ const App: React.FC = () => {
           </p>
         </div>
         
-        <AnalysisDashboard onAnalyze={performAnalysis} isLoading={isLoading} />
+        {showAuth ? (
+          <AuthComponent onAuthSuccess={handleAuthSuccess} />
+        ) : (
+          <>
+            <AnalysisDashboard onAnalyze={performAnalysis} isLoading={isLoading} />
 
-        <div className="w-full max-w-5xl min-h-[10rem]">
-          {isLoading && (
-              <div className="flex flex-col items-center justify-center p-8 bg-slate-900/50 rounded-lg border border-slate-700">
-                  <LoadingSpinner />
-                  <p className="text-slate-300 mt-4 text-lg">{loadingMessage || `Analyzing data for: "${currentQuery}"`}</p>
-                  <p className="text-slate-500 text-sm mt-1">This may take a moment...</p>
-              </div>
-          )}
-          {error && (
-              <div className="bg-red-900/50 border border-red-700 text-red-300 p-4 rounded-lg">
-                  <h3 className="font-bold">Analysis Failed</h3>
-                  <p>{error}</p>
-              </div>
-          )}
-          {analysisResult && !isLoading && <AnalysisResults result={analysisResult} currentQuery={currentQuery} />}
-        </div>
+            <div className="w-full max-w-5xl min-h-[10rem]">
+              {isLoading && (
+                  <div className="flex flex-col items-center justify-center p-8 bg-slate-900/50 rounded-lg border border-slate-700">
+                      <LoadingSpinner />
+                      <p className="text-slate-300 mt-4 text-lg">{loadingMessage || `Analyzing data for: "${currentQuery}"`}</p>
+                      <p className="text-slate-500 text-sm mt-1">This may take a moment...</p>
+                  </div>
+              )}
+              {error && (
+                  <div className="bg-red-900/50 border border-red-700 text-red-300 p-4 rounded-lg">
+                      <h3 className="font-bold">Analysis Failed</h3>
+                      <p>{error}</p>
+                  </div>
+              )}
+              {analysisResult && !isLoading && <AnalysisResults result={analysisResult} currentQuery={currentQuery} />}
+            </div>
 
-        <div className="w-full max-w-5xl space-y-16">
-          <ResearchPaperSection />
-          <WhyItMattersSection />
-          <MonetizationSection />
-        </div>
+            <div className="w-full max-w-5xl space-y-16">
+              <ResearchPaperSection />
+              <WhyItMattersSection />
+              <MonetizationSection 
+                userId={user?.id} 
+                isSubscriber={isSubscriber}
+                onUpgradeSuccess={handleUpgradeSuccess}
+              />
+            </div>
+          </>
+        )}
       </main>
       <footer className="text-center p-4 text-slate-500 text-sm">
         <p>The MAGA Files. For educational and research purposes.</p>

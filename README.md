@@ -22,6 +22,10 @@ This project is designed for deployment on Vercel. The recommended way to run it
 
     # The public URL to your daily-updated CSV file
     VITE_CSV_URL="YOUR_PUBLIC_CSV_URL_HERE"
+    
+    # Supabase configuration
+    VITE_SUPABASE_URL="YOUR_SUPABASE_PROJECT_URL"
+    VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
     ```
 
 3.  **Run the development server:**
@@ -29,11 +33,19 @@ This project is designed for deployment on Vercel. The recommended way to run it
     npm run start
     ```
 
+## Supabase Setup
+This project uses Supabase for user authentication and data storage. To set up Supabase:
+
+1. Create a Supabase account and project at [https://supabase.com](https://supabase.com)
+2. Create the necessary database tables by running the SQL commands in `docs/supabase-schema.sql`
+3. Configure authentication using the guide in `docs/supabase-auth-setup.md`
+4. Add your Supabase credentials to your environment variables as shown above
+
 ## Deploy to Vercel
 This is the primary method for deploying the application.
 
 1. Push your code to a GitHub repository.
 2. Import the project into Vercel from your GitHub repository.
 3. Vercel will automatically detect that this is a Vite application.
-4. **Crucial Step:** Go to your project's **Settings > Environment Variables** in the Vercel dashboard. Add your `GEMINI_API_KEY` and `VITE_CSV_URL`.
+4. **Crucial Step:** Go to your project's **Settings > Environment Variables** in the Vercel dashboard. Add your `GEMINI_API_KEY`, `VITE_CSV_URL`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY`.
 5. Deploy! Your serverless function in the `api` directory will be deployed automatically.

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { PaymentComponent } from './PaymentComponent';
 
 const CheckIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -6,7 +7,40 @@ const CheckIcon = () => (
     </svg>
 );
 
-export const MonetizationSection: React.FC = () => {
+interface MonetizationSectionProps {
+  userId?: string;
+  isSubscriber?: boolean;
+  onUpgradeSuccess?: () => void;
+}
+
+export const MonetizationSection: React.FC<MonetizationSectionProps> = ({ 
+  userId, 
+  isSubscriber = false,
+  onUpgradeSuccess 
+}) => {
+  const [showPayment, setShowPayment] = useState(false);
+
+  const handlePaymentSuccess = () => {
+    setShowPayment(false);
+    if (onUpgradeSuccess) {
+      onUpgradeSuccess();
+    }
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPayment(false);
+  };
+
+  if (showPayment && userId) {
+    return (
+      <PaymentComponent 
+        userId={userId} 
+        onPaymentSuccess={handlePaymentSuccess}
+        onPaymentCancel={handlePaymentCancel}
+      />
+    );
+  }
+
   return (
     <section className="text-center">
       <h2 className="text-3xl font-bold mb-2">Unlock the Full Picture</h2>
@@ -26,12 +60,18 @@ export const MonetizationSection: React.FC = () => {
                 <CheckIcon /> <span>Access to the AI analysis tool</span>
             </li>
             <li className="flex items-center gap-3">
-                <CheckIcon /> <span>Limited to 5 queries per day</span>
+                <CheckIcon /> <span>Limited to 3 queries per day</span>
             </li>
           </ul>
-           <button disabled className="mt-auto w-full bg-slate-700 text-slate-400 font-bold py-3 px-6 rounded-md cursor-not-allowed">
-            Your Current Plan
-          </button>
+          {isSubscriber ? (
+            <button disabled className="mt-auto w-full bg-green-700 text-white font-bold py-3 px-6 rounded-md">
+              Premium User
+            </button>
+          ) : (
+            <button disabled className="mt-auto w-full bg-slate-700 text-slate-400 font-bold py-3 px-6 rounded-md cursor-not-allowed">
+              Your Current Plan
+            </button>
+          )}
         </div>
         
         {/* Paid Tier */}
@@ -45,15 +85,24 @@ export const MonetizationSection: React.FC = () => {
                     <CheckIcon /> <span>Unlimited queries</span>
                 </li>
                 <li className="flex items-center gap-3">
-                    <CheckIcon /> <span>Ability to save and export analysis reports</span>
+                    <CheckIcon /> <span>Receive the analysis in their email</span>
                 </li>
                 <li className="flex items-center gap-3">
                     <CheckIcon /> <span>Priority access to new features</span>
                 </li>
             </ul>
-            <button className="mt-auto w-full bg-fuchsia-600 text-white font-bold py-3 px-6 rounded-md hover:bg-fuchsia-500 transition-colors">
+            {isSubscriber ? (
+              <button disabled className="mt-auto w-full bg-green-700 text-white font-bold py-3 px-6 rounded-md">
+                Premium User
+              </button>
+            ) : (
+              <button 
+                onClick={() => setShowPayment(true)}
+                className="mt-auto w-full bg-fuchsia-600 text-white font-bold py-3 px-6 rounded-md hover:bg-fuchsia-500 transition-colors"
+              >
                 $10 One-Time Unlock
-            </button>
+              </button>
+            )}
         </div>
       </div>
     </section>
