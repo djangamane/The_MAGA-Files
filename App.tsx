@@ -207,11 +207,9 @@ const App: React.FC = () => {
       <div className="fixed top-0 left-0 w-full h-full bg-slate-900/80 -z-10"></div>
 
       <main className="flex-grow container mx-auto p-4 md:p-8 flex flex-col items-center gap-12">
-        <div className="w-full text-center mt-8">
-          <div className="flex justify-center mb-6">
-            <div className="h-20 w-20">
-              <Logo />
-            </div>
+        <div className="w-full flex flex-col items-center text-center mt-8">
+          <div className="h-20 w-20 mb-6 relative">
+            <Logo />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-slate-100 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-cyan-400">
             The MAGA Files: Your AI Truth Machine
