@@ -59,7 +59,8 @@ export const analyzeNewsletterData = async (csvData: string, userQuery: string):
       },
     });
 
-    const jsonText = (await result.response).text.trim();
+    const response = await result.response;
+    const jsonText = response.text().trim();
     const parsedResult: AnalysisResult = JSON.parse(jsonText);
     return parsedResult;
 
