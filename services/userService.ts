@@ -40,17 +40,22 @@ export const getUser = async (userId: string): Promise<User | null> => {
 /**
  * Create a new user
  */
-export const createUser = async (email: string): Promise<User | null> => {
+export const createUser = async (email: string, userId?: string): Promise<User | null> => {
+  const userData: any = {
+    email: email,
+    is_subscriber: false,
+    query_count: 0,
+    last_query_date: new Date().toISOString(),
+  };
+
+  // If userId is provided, use it as the id (should match auth user id)
+  if (userId) {
+    userData.id = userId;
+  }
+
   const { data, error } = await supabase
     .from('users')
-    .insert([
-      {
-        email: email,
-        is_subscriber: false,
-        query_count: 0,
-        last_query_date: new Date().toISOString(),
-      },
-    ])
+    .insert([userData])
     .select()
     .single();
 

@@ -19,57 +19,96 @@ export const AuthComponent: React.FC<AuthComponentProps> = ({ onAuthSuccess }) =
     setMessage('');
     setShowResendConfirmation(false);
 
+    console.log('Starting auth process:', isLogin ? 'login' : 'signup', 'for email:', email);
+
     try {
       if (isLogin) {
+        console.log('Attempting login...');
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
+        console.log('Login response:', { data: data ? 'success' : null, error });
+
         if (error) {
+          console.error('Login error:', error);
           // Check if it's an email confirmation issue
-          if (error.message.includes('Email not confirmed') || error.message.includes('confirmation')) {
+          if (error.message.includes('Email not confirmed') ||
+              error.message.includes('confirmation') ||
+              error.message.includes('confirm') ||
+              error.message.includes('verify') ||
+              error.message.includes('check your email')) {
             setMessage('Please check your email and click the confirmation link before signing in.');
             setShowResendConfirmation(true);
+            return;
+          }
+          // Check for other common auth errors
+          if (error.message.includes('Invalid login credentials')) {
+            setMessage('Invalid email or password. Please check your credentials and try again.');
+            return;
+          }
+          if (error.message.includes('Too many requests')) {
+            setMessage('Too many login attempts. Please wait a few minutes before trying again.');
             return;
           }
           throw error;
         }
 
+        console.log('Login successful, checking user record...');
         // After successful login, ensure user record exists
         if (data.user) {
           const { createUser, getUser } = await import('../services/userService');
           const existingUser = await getUser(data.user.id);
+          console.log('Existing user check:', existingUser);
 
           if (!existingUser) {
-            await createUser(email);
+            console.log('Creating user record...');
+            await createUser(email, data.user.id);
           }
         }
       } else {
+        console.log('Attempting signup...');
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               email: email,
-            }
+            },
+            // Disable email confirmation for now to simplify the flow
+            emailRedirectTo: window.location.origin
           }
         });
 
-        if (error) throw error;
+        console.log('Signup response:', { data: data ? 'success' : null, error });
 
+        if (error) {
+          console.error('Signup error:', error);
+          throw error;
+        }
+
+        console.log('Signup successful, creating user record...');
         // Create user record immediately after signup
         if (data.user) {
           const { createUser } = await import('../services/userService');
-          await createUser(email);
+          const userRecord = await createUser(email, data.user.id);
+          console.log('User record created:', userRecord);
         }
 
-        setMessage('Account created! Check your email for the confirmation link.');
+        // Check if user needs email confirmation
+        if (data.user && !data.user.email_confirmed_at) {
+          setMessage('Account created! Please check your email and click the confirmation link to activate your account.');
+        } else {
+          setMessage('Account created successfully! You can now sign in.');
+        }
+        console.log('Signup completed successfully');
       }
 
       onAuthSuccess();
     } catch (error: any) {
-      setMessage(error.message);
+      console.error('Auth error:', error);
+      setMessage(error.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
