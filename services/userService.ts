@@ -185,3 +185,39 @@ export const canUserPerformQuery = async (userId: string): Promise<boolean> => {
   // Check if user has remaining queries for today
   return user.query_count < 3;
 };
+
+/**
+ * Upgrade a user to subscriber status (for admin use after payment)
+ * @param userId - The ID of the user to upgrade
+ */
+export const upgradeUserToSubscriber = async (userId: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('users')
+    .update({ is_subscriber: true })
+    .eq('id', userId);
+
+  if (error) {
+    console.error('Error upgrading user:', error);
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Upgrade a user to subscriber by email (for admin use after payment)
+ * @param email - The email of the user to upgrade
+ */
+export const upgradeUserByEmail = async (email: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('users')
+    .update({ is_subscriber: true })
+    .eq('email', email);
+
+  if (error) {
+    console.error('Error upgrading user by email:', error);
+    return false;
+  }
+
+  return true;
+};

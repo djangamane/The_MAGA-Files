@@ -37,16 +37,28 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Check for existing session
+  // Check for existing session and handle auth callback
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
+      // Handle auth callback from email confirmation
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error('Session error:', error);
+      }
+
+      // Clean up URL if it contains auth tokens (from email confirmation)
+      if (window.location.hash && window.location.hash.includes('access_token')) {
+        // Remove the hash from URL to clean it up
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+
+      setUser(data.session?.user || null);
       setShowAuth(false); // Don't show auth by default
-      
-      if (session?.user) {
+
+      if (data.session?.user) {
         // Check if user is a subscriber
-        const userData = await getUser(session.user.id);
+        const userData = await getUser(data.session.user.id);
         if (userData) {
           setIsSubscriber(userData.is_subscriber);
         }
@@ -56,17 +68,16 @@ const App: React.FC = () => {
     checkSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user || null);
       setShowAuth(false); // Don't show auth by default
-      
+
       if (session?.user) {
         // Check if user is a subscriber
-        getUser(session.user.id).then(userData => {
-          if (userData) {
-            setIsSubscriber(userData.is_subscriber);
-          }
-        });
+        const userData = await getUser(session.user.id);
+        if (userData) {
+          setIsSubscriber(userData.is_subscriber);
+        }
       }
     });
 
@@ -134,7 +145,7 @@ const App: React.FC = () => {
       if (!canGuestPerformQuery()) {
         // Show auth when guest has used all free queries
         setShowAuth(true);
-        setError("You've used all your free queries. Please sign up to continue.");
+        setError("You've used all your free queries. Sign up for $10 to get unlimited access.");
         return;
       }
 
@@ -237,11 +248,11 @@ const App: React.FC = () => {
             ) : (
               <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-6">
                 <p className="text-slate-300 mb-4">
-                  You've used all your free queries. Sign up to get unlimited access to The MAGA Files.
+                  You've used all your free queries. Sign up for $10 to get unlimited access and premium features.
                 </p>
                 <AuthComponent onAuthSuccess={handleAuthSuccess} />
                 <div className="mt-4 text-center">
-                  <button 
+                  <button
                     onClick={handleContinueAsGuest}
                     className="text-fuchsia-400 hover:text-fuchsia-300"
                   >
@@ -258,12 +269,43 @@ const App: React.FC = () => {
             {/* Sign In / Sign Up button for guests */}
             {!user && (
               <div className="w-full max-w-3xl text-center">
-                <button 
+                <button
                   onClick={() => setShowAuth(true)}
                   className="text-sm text-fuchsia-400 hover:text-fuchsia-300"
                 >
-                  Sign In / Sign Up for Unlimited Access
+                  Sign In / Sign Up for Premium Features ($10)
                 </button>
+              </div>
+            )}
+
+            {/* Upgrade to Premium section for signed-in non-subscribers */}
+            {user && !isSubscriber && (
+              <div className="w-full max-w-3xl text-center bg-slate-900/30 border border-slate-700 rounded-lg p-6">
+                <h3 className="text-lg font-bold text-fuchsia-400 mb-2">Upgrade to Premium</h3>
+                <p className="text-slate-400 mb-4">
+                  Get unlimited queries and receive analysis results via email.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                  <a
+                    href="https://www.paypal.com/ncp/payment/8C4NL9DQC5WL8"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-fuchsia-600 text-white font-bold py-2 px-6 rounded-md hover:bg-fuchsia-500 transition-colors"
+                  >
+                    Pay $10 via PayPal
+                  </a>
+                  <button
+                    onClick={() => {
+                      alert('After completing your PayPal payment, please contact support to activate your premium account. Include your email address and payment confirmation.');
+                    }}
+                    className="text-sm text-fuchsia-400 hover:text-fuchsia-300 underline"
+                  >
+                    Need help activating?
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-3">
+                  Payment is processed securely through PayPal. Premium access is granted immediately after payment verification.
+                </p>
               </div>
             )}
 
