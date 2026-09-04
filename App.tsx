@@ -12,11 +12,12 @@ import { AuthComponent } from './components/AuthComponent';
 
 import type { AnalysisResult } from './types';
 import { analyzeNewsletterData } from './services/geminiService';
+import type { DataFreshness } from './services/geminiService';
 import { supabase } from './services/supabaseClient';
 import { canUserPerformQuery, saveUserAnalysis, sendAnalysisToUser, getUser } from './services/userService';
 
-// The CSV URL is now managed via environment variables for easy configuration on Vercel.
-const CSV_URL = import.meta.env.VITE_CSV_URL;
+// The data source URL now lives server-side in api/analyze.ts, alongside the
+// Gemini key. Neither belongs in the client bundle.
 
 const App: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -28,6 +29,7 @@ const App: React.FC = () => {
   const [showAuth, setShowAuth] = useState<boolean>(false); // Changed default to false
   const [isSubscriber, setIsSubscriber] = useState<boolean>(false);
   const [guestQueryCount, setGuestQueryCount] = useState<number>(0);
+  const [dataFreshness, setDataFreshness] = useState<DataFreshness | null>(null);
 
   // Initialize guest query count from localStorage
   useEffect(() => {
@@ -110,16 +112,10 @@ const App: React.FC = () => {
       setCurrentQuery(query);
   
       try {
-        setLoadingMessage('Fetching latest data...');
-        const response = await fetch(CSV_URL);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch data from the source. Status: ${response.status}`);
-        }
-        const csvData = await response.text();
-  
         setLoadingMessage(`Analyzing data for: "${query}"`);
-        const result = await analyzeNewsletterData(csvData, query);
+        const { result, dataFreshness } = await analyzeNewsletterData(query);
         setAnalysisResult(result);
+        setDataFreshness(dataFreshness);
         
         // Save analysis for premium users
         await saveUserAnalysis(user.id, query, result);
@@ -149,27 +145,16 @@ const App: React.FC = () => {
         return;
       }
 
-      if (!CSV_URL) {
-        setError("Data source URL is not configured. Please set VITE_CSV_URL in your environment variables.");
-        return;
-      }
-
       setIsLoading(true);
       setError(null);
       setAnalysisResult(null);
       setCurrentQuery(query);
   
       try {
-        setLoadingMessage('Fetching latest data...');
-        const response = await fetch(CSV_URL);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch data from the source. Status: ${response.status}`);
-        }
-        const csvData = await response.text();
-  
         setLoadingMessage(`Analyzing data for: "${query}"`);
-        const result = await analyzeNewsletterData(csvData, query);
+        const { result, dataFreshness } = await analyzeNewsletterData(query);
         setAnalysisResult(result);
+        setDataFreshness(dataFreshness);
         
         // Increment guest query count
         incrementGuestQueryCount();
@@ -321,6 +306,17 @@ const App: React.FC = () => {
                   <div className="bg-red-900/50 border border-red-700 text-red-300 p-4 rounded-lg">
                       <h3 className="font-bold">Analysis Failed</h3>
                       <p>{error}</p>
+                  </div>
+              )}
+              {dataFreshness?.stale && !isLoading && (
+                  <div className="bg-amber-900/40 border border-amber-700 text-amber-200 p-4 rounded-lg">
+                      <h3 className="font-bold">Data is not current</h3>
+                      <p>
+                        The most recent entry in the archive is dated{' '}
+                        {dataFreshness.latestEntry ?? 'unknown'}
+                        {dataFreshness.ageInDays !== null && ` — ${dataFreshness.ageInDays} days ago`}.
+                        This analysis reflects that archive, not today's news.
+                      </p>
                   </div>
               )}
               {analysisResult && !isLoading && <AnalysisResults result={analysisResult} currentQuery={currentQuery} />}
