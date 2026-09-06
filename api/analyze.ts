@@ -21,6 +21,17 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const MODEL = 'gemini-2.5-flash';
 
+// The Fragile News Source blog API, fed daily by the soWSnewsletter GitHub
+// Action. Public, no auth, and it reports its own `staleDays` — which is why
+// it is the default rather than the Google Sheet this used to read.
+//
+// It is currently shallow: ingest only began 2026-09-01, so it holds a handful
+// of issues and deepens by one a day. The 562-issue back catalogue lives in
+// soWSnewsletter/docs and can be pushed through POST /api/blog/ingest to
+// backfill it. Until that happens, expect analyses to reflect recent coverage
+// rather than the full archive.
+const DEFAULT_DATA_SOURCE = 'https://fns-news.onrender.com/api/blog?limit=400';
+
 // Past this, the endpoint fails instead of quietly answering from an archive.
 const MAX_DATA_AGE_DAYS = 45;
 // Past this, it still answers but flags the age to the caller.
@@ -32,22 +43,67 @@ const MONTHS = [
 ];
 
 /** Newest newsletter date found in the raw feed, or null if none parse. */
-function newestDate(csv: string): Date | null {
+function newestDate(raw: string): Date | null {
   const dates: number[] = [];
 
-  // ISO timestamps in the Date column.
-  for (const m of csv.matchAll(/\b(20\d{2})-(\d{2})-(\d{2})T/g)) {
+  // ISO timestamps — the Sheet's Date column, and publishedAt in the blog API.
+  for (const m of raw.matchAll(/\b(20\d{2})-(\d{2})-(\d{2})(?:T|"|\b)/g)) {
     dates.push(Date.UTC(+m[1], +m[2] - 1, +m[3]));
   }
-  // The human date printed inside each newsletter body. The Date column was
-  // empty for most rows in the Sheet, so this is the reliable signal.
+  // The human date printed inside each newsletter body. The Sheet's Date
+  // column was empty for most rows, so this is the reliable signal there.
   const monthRe = new RegExp(`\\b(${MONTHS.join('|')})\\s+(\\d{1,2}),\\s+(20\\d{2})`, 'g');
-  for (const m of csv.matchAll(monthRe)) {
+  for (const m of raw.matchAll(monthRe)) {
     dates.push(Date.UTC(+m[3], MONTHS.indexOf(m[1]), +m[2]));
   }
 
   if (!dates.length) return null;
   return new Date(Math.max(...dates));
+}
+
+/**
+ * Normalise whatever the source returns into text for the model, plus the
+ * best available age signal.
+ *
+ * Two shapes are supported. The blog API returns JSON and computes its own
+ * `staleDays`, which is authoritative and used in preference to date-scraping.
+ * The legacy Google Sheet returns CSV, where the age has to be inferred.
+ */
+function normalise(raw: string): { text: string; ageInDays: number | null; latest: Date | null } {
+  const trimmed = raw.trimStart();
+
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const entries = Array.isArray(parsed) ? parsed : parsed?.entries;
+
+      if (Array.isArray(entries) && entries.length) {
+        const text = entries
+          .map((e: any) => {
+            const date = e?.publishedAt || e?.id || '';
+            const body = e?.newsletter || e?.body || e?.content || '';
+            const links = Array.isArray(e?.relatedArticles)
+              ? e.relatedArticles.join('\n')
+              : e?.relatedArticles || '';
+            return `--- ISSUE ${date} ---\n${body}\n${links}`.trim();
+          })
+          .join('\n\n');
+
+        const reported = typeof parsed?.staleDays === 'number' ? parsed.staleDays : null;
+        const latest = newestDate(trimmed);
+        return {
+          text,
+          ageInDays: reported ?? (latest ? ageInDays(latest) : null),
+          latest,
+        };
+      }
+    } catch {
+      // Malformed JSON: fall through and treat it as opaque text.
+    }
+  }
+
+  const latest = newestDate(raw);
+  return { text: raw, ageInDays: latest ? ageInDays(latest) : null, latest };
 }
 
 function ageInDays(d: Date): number {
@@ -58,7 +114,7 @@ const PROMPT_HEADER =
   'You are an expert data analyst and sociologist specializing in monitoring ' +
   'and analyzing extremist rhetoric, specifically white supremacy. Your analysis ' +
   'must be exceptionally detailed, nuanced, and academic in tone. You will be ' +
-  'given a dataset in CSV format containing newsletter data. Your task is to ' +
+  'given a dataset containing newsletter data. Your task is to ' +
   "analyze this data based on the user's prompt and provide deep, comprehensive, " +
   'and structured insights. The output must be in JSON format, strictly adhering ' +
   'to the provided schema. Do not include markdown formatting like ```json in ' +
@@ -88,19 +144,13 @@ export default async function handler(req: any, res: any) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  const dataUrl = process.env.DATA_SOURCE_URL || process.env.CSV_URL;
+  const dataUrl = process.env.DATA_SOURCE_URL || process.env.CSV_URL || DEFAULT_DATA_SOURCE;
 
   if (!apiKey) {
     return res.status(500).json({
       error: 'Server is not configured: GEMINI_API_KEY is not set.',
     });
   }
-  if (!dataUrl) {
-    return res.status(500).json({
-      error: 'Server is not configured: DATA_SOURCE_URL is not set.',
-    });
-  }
-
   const query = typeof req.body === 'string'
     ? (JSON.parse(req.body || '{}').query)
     : req.body?.query;
@@ -119,10 +169,13 @@ export default async function handler(req: any, res: any) {
         error: `Data source returned ${dataRes.status}. The archive may have moved or been retired.`,
       });
     }
-    const csv = await dataRes.text();
+    const { text: corpus, ageInDays: age, latest } = normalise(await dataRes.text());
 
-    const latest = newestDate(csv);
-    const age = latest ? ageInDays(latest) : null;
+    if (!corpus.trim()) {
+      return res.status(502).json({
+        error: 'The data source returned no usable content.',
+      });
+    }
 
     if (age !== null && age > MAX_DATA_AGE_DAYS) {
       return res.status(503).json({
@@ -131,7 +184,7 @@ export default async function handler(req: any, res: any) {
           `${latest!.toISOString().slice(0, 10)}). Analysis is disabled rather ` +
           `than answering questions about current events from a stale archive.`,
         dataFreshness: {
-          latestEntry: latest!.toISOString().slice(0, 10),
+          latestEntry: latest ? latest.toISOString().slice(0, 10) : null,
           ageInDays: age,
           stale: true,
         },
@@ -147,9 +200,9 @@ export default async function handler(req: any, res: any) {
         parts: [{
           text:
             `${PROMPT_HEADER}\n\n` +
-            `Based on the following CSV data from a series of newsletters, ` +
-            `please perform the requested analysis.\n\n` +
-            `User Query: "${query}"\n\nCSV Data:\n---\n${csv}\n---\n\n` +
+            `Based on the following newsletter archive, please perform the ` +
+            `requested analysis.\n\n` +
+            `User Query: "${query}"\n\nNewsletter data:\n---\n${corpus}\n---\n\n` +
             `Please provide your analysis in the following JSON format:\n${SCHEMA}`,
         }],
       }],
